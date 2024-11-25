@@ -33,8 +33,23 @@ private:
 
         if (!node->left && !node->right)
         { // Leaf node
-            leftPart = std::make_shared<RopeNode>(node->data.substr(0, index));
-            rightPart = std::make_shared<RopeNode>(node->data.substr(index));
+            // Ensure the index is within bounds
+            int length = node->data.length();
+            if (index >= length)
+            {
+                leftPart = std::make_shared<RopeNode>(node->data); // All data goes to left
+                rightPart = nullptr;                               // Right is null
+            }
+            else if (index <= 0)
+            {
+                leftPart = nullptr;                                 // Left is null
+                rightPart = std::make_shared<RopeNode>(node->data); // All data goes to right
+            }
+            else
+            {
+                leftPart = std::make_shared<RopeNode>(node->data.substr(0, index));
+                rightPart = std::make_shared<RopeNode>(node->data.substr(index));
+            }
         }
         else
         {
@@ -123,19 +138,12 @@ public:
         // Step 3: Concatenate the left and right parts, excluding the middle part
         root = concatenate(leftpart, rightpart);
     }
-
     void replace(int start, int length, const std::string &newStr)
     {
         // Validate inputs
         if (start < 0 || length < 0)
         {
             throw std::invalid_argument("start and length must be non-negative");
-        }
-
-        // Ensure split indices are valid
-        if (!root || start >= root->weight + (root->right ? root->right->weight : 0))
-        {
-            throw std::out_of_range("start index is out of range");
         }
 
         std::shared_ptr<RopeNode> left, middle, right;
@@ -158,7 +166,22 @@ public:
         std::shared_ptr<RopeNode> replacement = std::make_shared<RopeNode>(newStr);
 
         // Step 4: Concatenate the parts: left + replacement + right
-        root = concatenate(concatenate(left, replacement), right);
+        if (!left && !right)
+        {
+            root = replacement;
+        }
+        else if (!left)
+        {
+            root = concatenate(replacement, right);
+        }
+        else if (!right)
+        {
+            root = concatenate(left, replacement);
+        }
+        else
+        {
+            root = concatenate(concatenate(left, replacement), right);
+        }
     }
 
     // Print the rope
