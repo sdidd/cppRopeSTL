@@ -1,9 +1,9 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <stdexcept>
 
-class RopeNode
-{
+class RopeNode {
 public:
     std::string data; // Leaf node data
     int weight;       // Weight of the left subtree
@@ -14,53 +14,37 @@ public:
 
     // Constructor for internal nodes
     RopeNode(std::shared_ptr<RopeNode> leftChild, std::shared_ptr<RopeNode> rightChild)
-        : data(""), weight(leftChild ? leftChild->weight : 0), left(leftChild), right(rightChild) {}
+        : data(""), weight(leftChild ? leftChild->weight + (leftChild->right ? leftChild->right->weight : 0) : 0), left(leftChild), right(rightChild) {}
 };
 
-class Rope
-{
+class Rope {
 private:
     std::shared_ptr<RopeNode> root;
 
     // Helper for splitting at a given index
-    void split(std::shared_ptr<RopeNode> node, int index, std::shared_ptr<RopeNode> &leftPart, std::shared_ptr<RopeNode> &rightPart)
-    {
-        if (!node)
-        {
+    void split(std::shared_ptr<RopeNode> node, int index, std::shared_ptr<RopeNode> &leftPart, std::shared_ptr<RopeNode> &rightPart) {
+        if (!node) {
             leftPart = rightPart = nullptr;
             return;
         }
 
-        if (!node->left && !node->right)
-        { // Leaf node
-            // Ensure the index is within bounds
-            int length = node->data.length();
-            if (index >= length)
-            {
-                leftPart = std::make_shared<RopeNode>(node->data); // All data goes to left
-                rightPart = nullptr;                               // Right is null
-            }
-            else if (index <= 0)
-            {
-                leftPart = nullptr;                                 // Left is null
-                rightPart = std::make_shared<RopeNode>(node->data); // All data goes to right
-            }
-            else
-            {
+        if (!node->left && !node->right) { // Leaf node
+            if (index >= node->data.length()) {
+                leftPart = node;
+                rightPart = nullptr;
+            } else if (index <= 0) {
+                leftPart = nullptr;
+                rightPart = node;
+            } else {
                 leftPart = std::make_shared<RopeNode>(node->data.substr(0, index));
                 rightPart = std::make_shared<RopeNode>(node->data.substr(index));
             }
-        }
-        else
-        {
-            if (index < node->weight)
-            { // Split in the left subtree
+        } else {
+            if (index < node->weight) { // Split in the left subtree
                 std::shared_ptr<RopeNode> tempRight;
                 split(node->left, index, leftPart, tempRight);
                 rightPart = std::make_shared<RopeNode>(tempRight, node->right);
-            }
-            else
-            { // Split in the right subtree
+            } else { // Split in the right subtree
                 std::shared_ptr<RopeNode> tempLeft;
                 split(node->right, index - node->weight, tempLeft, rightPart);
                 leftPart = std::make_shared<RopeNode>(node->left, tempLeft);
@@ -69,31 +53,22 @@ private:
     }
 
     // Private helper for concatenating two RopeNode pointers
-    std::shared_ptr<RopeNode> concatenate(std::shared_ptr<RopeNode> left, std::shared_ptr<RopeNode> right)
-    {
+    std::shared_ptr<RopeNode> concatenate(std::shared_ptr<RopeNode> left, std::shared_ptr<RopeNode> right) {
         return std::make_shared<RopeNode>(left, right);
     }
 
     // Helper for extracting a substring
-    void extract(std::shared_ptr<RopeNode> node, int start, int length, std::string &result)
-    {
-        if (!node || length <= 0)
-            return;
+    void extract(std::shared_ptr<RopeNode> node, int start, int length, std::string &result) {
+        if (!node || length <= 0) return;
 
-        if (!node->left && !node->right)
-        { // Leaf node
+        if (!node->left && !node->right) { // Leaf node
             result += node->data.substr(start, length);
-        }
-        else
-        {
-            if (start < node->weight)
-            { // Part in the left subtree
+        } else {
+            if (start < node->weight) { // Part in the left subtree
                 int leftLength = std::min(length, node->weight - start);
                 extract(node->left, start, leftLength, result);
                 extract(node->right, 0, length - leftLength, result);
-            }
-            else
-            { // Entirely in the right subtree
+            } else { // Entirely in the right subtree
                 extract(node->right, start - node->weight, length, result);
             }
         }
@@ -104,116 +79,79 @@ public:
     Rope(const std::string &str) : root(std::make_shared<RopeNode>(str)) {}
 
     // Concatenate another rope
-    void concatenate(Rope &other)
-    {
-        root = concatenate(root, other.root); // Pass the roots of the Rope objects
+    void concatenate(Rope &other) {
+        root = concatenate(root, other.root);
     }
 
     // Substring
-    std::string substring(int start, int length)
-    {
+    std::string substring(int start, int length) {
+        if (start < 0 || length < 0) {
+            throw std::invalid_argument("start and length must be non-negative");
+        }
+
         std::string result;
         extract(root, start, length, result);
         return result;
     }
 
     // Insert
-    void insert(int index, const std::string &str)
-    {
+    void insert(int index, const std::string &str) {
+        if (index < 0) {
+            throw std::invalid_argument("index must be non-negative");
+        }
+
         std::shared_ptr<RopeNode> leftPart, rightPart;
         split(root, index, leftPart, rightPart);
         root = concatenate(concatenate(leftPart, std::make_shared<RopeNode>(str)), rightPart);
     }
 
     // Delete the rope node
-    void erase(int start, int length)
-    {
-        std::shared_ptr<RopeNode> leftpart, middlepart, rightpart;
-        split(root, start, leftpart, middlepart);
+    void erase(int start, int length) {
+        if (start < 0 || length < 0) {
+            throw std::invalid_argument("start and length must be non-negative");
+        }
 
-        // Splitting again on other side
-        std::shared_ptr<RopeNode> tempRightPart;
-        split(middlepart, length, middlepart, rightpart);
-
-        // Step 3: Concatenate the left and right parts, excluding the middle part
-        root = concatenate(leftpart, rightpart);
+        std::shared_ptr<RopeNode> leftPart, middlePart, rightPart;
+        split(root, start, leftPart, middlePart);
+        split(middlePart, length, middlePart, rightPart);
+        root = concatenate(leftPart, rightPart);
     }
-    void replace(int start, int length, const std::string &newStr)
-    {
-        // Validate inputs
-        if (start < 0 || length < 0)
-        {
+
+    void replace(int start, int length, const std::string &newStr) {
+        if (start < 0 || length < 0) {
             throw std::invalid_argument("start and length must be non-negative");
         }
 
         std::shared_ptr<RopeNode> left, middle, right;
-
-        // Step 1: Split at start index
         split(root, start, left, middle);
+        split(middle, length, middle, right);
 
-        // Step 2: Split at (start + length) to isolate the substring to replace
-        if (middle)
-        {
-            std::shared_ptr<RopeNode> tempRight;
-            split(middle, length, middle, right);
-        }
-        else
-        {
-            right = nullptr; // If no middle part, right remains null
-        }
-
-        // Step 3: Create a new node for the replacement string
         std::shared_ptr<RopeNode> replacement = std::make_shared<RopeNode>(newStr);
-
-        // Step 4: Concatenate the parts: left + replacement + right
-        if (!left && !right)
-        {
-            root = replacement;
-        }
-        else if (!left)
-        {
-            root = concatenate(replacement, right);
-        }
-        else if (!right)
-        {
-            root = concatenate(left, replacement);
-        }
-        else
-        {
-            root = concatenate(concatenate(left, replacement), right);
-        }
+        root = concatenate(concatenate(left, replacement), right);
     }
 
     // Print the rope
-    void print(std::shared_ptr<RopeNode> node)
-    {
-        if (!node)
-            return;
-        if (!node->left && !node->right)
-        {
+    void print(std::shared_ptr<RopeNode> node) {
+        if (!node) return;
+        if (!node->left && !node->right) {
             std::cout << node->data;
-        }
-        else
-        {
+        } else {
             print(node->left);
             print(node->right);
         }
     }
 
-    void display()
-    {
+    void display() {
         print(root);
         std::cout << std::endl;
     }
 };
 
-int main()
-{
+int main() {
     Rope rope("Hello, Beautiful World!");
     rope.display(); // Output: Hello, Beautiful World!
 
-    try
-    {
+    try {
         // Replace "Beautiful" with "Wonderful"
         rope.replace(7, 9, "Wonderful");
         rope.display(); // Output: Hello, Wonderful World!
@@ -228,9 +166,7 @@ int main()
 
         // Invalid replace (start out of range)
         rope.replace(50, 5, "Error");
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
 
