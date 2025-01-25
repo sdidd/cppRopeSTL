@@ -1,109 +1,92 @@
-# FILE: /cppRopeSTL/cppRopeSTL/README.md
-
 # cppRopeSTL
 
 ## Overview
+cppRopeSTL is a C++ implementation of the Rope data structure, which is used for efficient string manipulation. This implementation supports various operations such as printing, concatenation, and replacement of substrings.
 
-`cppRopeSTL` is a C++ implementation of the Rope data structure, which is used for efficient string manipulation. This project demonstrates various operations such as concatenation, insertion, deletion, and substring extraction on ropes.
+## How to Use
 
-## Features
+1. **Download the Files**
+   - Download `rope.h` and `rope.cpp` from the repository.
 
-- Efficient string manipulation
-- Concatenation of ropes
-- Insertion of strings at specified indices
-- Deletion of substrings
-- Replacement of substrings
-- Extraction of substrings
-- Printing the rope
-- Counting the number of nodes in the rope
+2. **Include in Your Project**
+   - Place `rope.h` in the `include` directory.
+   - Place `rope.cpp` in the `src` directory.
 
-## Classes
+3. **Include in Your Main File**
+   - In your main C++ file, include the header file:
+     ```cpp
+     #include "rope.h"
+     ```
 
-### RopeNode
+4. **Compile and Run**
+   - Compile your project using a C++ compiler:
+     ```sh
+     g++ -I include -o main src/rope.cpp main.cpp
+     ```
+   - Run the executable:
+     ```sh
+     ./main
+     ```
 
-A node in the Rope data structure.
-
-#### Public Members
-
-- `std::string data`: Leaf node data
-- `int weight`: Weight of the left subtree
-- `std::shared_ptr<RopeNode> left, right`: Pointers to left and right children
-
-#### Constructors
-
-- `RopeNode(const std::string &str)`: Constructor for leaf nodes
-- `RopeNode(std::shared_ptr<RopeNode> leftChild, std::shared_ptr<RopeNode> rightChild)`: Constructor for internal nodes
-
-### Rope
-
-A Rope data structure for efficient string manipulation.
-
-#### Public Methods
-
-- `Rope(const std::string &str)`: Constructor
-- `void concatenate(Rope &other)`: Concatenate another Rope
-- `std::string substring(int start, int length)`: Get a substring of the Rope
-- `void insert(int index, const std::string &str)`: Insert a string at a given index
-- `void erase(int start, int length)`: Erase a part of the Rope
-- `void replace(int start, int length, const std::string &newStr)`: Replace a part of the Rope with a new string
-- `void print()`: Print the Rope
-- `int length()`: Get the total length of characters in the Rope
-- `int nodeCount()`: Get the total number of nodes in the Rope
-
-## Usage
-
-### Example
+## Example Usage
 
 ```cpp
 #include <iostream>
 #include "rope.h"
 
-int main() {
-    Rope rope("Hello, World!");
-    rope.print(); // Should print "Hello, World!"
-
-    rope.replace(7, 5, "Universe");
-    rope.print(); // Should print "Hello, Universe!"
-
-    rope.insert(5, ",");
-    rope.print(); // Should print "Hello,, Universe!"
-
-    rope.erase(5, 1);
-    rope.print(); // Should print "Hello, Universe!"
-
-    std::string result = rope.substring(7, 8);
-    std::cout << "Substring: " << result << std::endl; // Should print "Universe"
-
-    Rope rope2(" Welcome!");
-    rope.concatenate(rope2);
-    rope.print(); // Should print "Hello, Universe! Welcome!"
-
-    std::cout << "Length: " << rope.length() << std::endl; // Should print 23
-    std::cout << "Node count: " << rope.nodeCount() << std::endl; // Should print 3
+int main()
+{
+    Rope rope("Hello, World! this is a test to try the multi node feature. this is of the rope data structure");
+    rope.print(); // Should print the entire string
+    std::cout << "String Count: " << rope.length() << "\nNode Count: " << rope.nodeCount() << std::endl;
+    rope.replace("this ", "Universe ");
+    rope.print(); // Should print the entire string with "this" replaced by "Universe"
+    std::cout << "String Count: " << rope.length() << "\nNode Count: " << rope.nodeCount() << std::endl;
 
     return 0;
 }
 ```
 
-## Building
+## Function Flow Diagram
 
-To build the project, use the following commands:
-
-```sh
-mkdir build
-cd build
-cmake ..
-make
+```mermaid
+graph TD;
+    A[main.cpp] -->|calls| B[Rope::Rope]
+    A -->|calls| C[Rope::print]
+    A -->|calls| D[Rope::length]
+    A -->|calls| E[Rope::nodeCount]
+    A -->|calls| F[Rope::replace]
+    F -->|calls| G[Rope::split]
+    F -->|calls| H[Rope::concatenate]
+    F -->|calls| I[Rope::collectLeaves]
+    F -->|calls| J[Rope::findAllOccurrences]
 ```
 
-## Running Tests
+## Functions
 
-To run the tests, execute the compiled binary:
+- **Rope::Rope(const std::string &str)**
+  - Constructor that initializes the Rope with the given string.
 
-```sh
-./main
-```
+- **void Rope::print()**
+  - Prints the entire string stored in the Rope.
 
-## License
+- **int Rope::length()**
+  - Returns the total length of characters in the Rope.
 
-This project is licensed under the MIT License.
+- **int Rope::nodeCount()**
+  - Returns the total number of nodes in the Rope.
+
+- **void Rope::replace(const std::string &oldStr, const std::string &newStr)**
+  - Replaces all occurrences of `oldStr` with `newStr` in the Rope.
+
+- **void Rope::split(std::shared_ptr<RopeNode> node, int index, std::shared_ptr<RopeNode> &leftPart, std::shared_ptr<RopeNode> &rightPart)**
+  - Splits the Rope at the given index into left and right parts.
+
+- **std::shared_ptr<RopeNode> Rope::concatenate(std::shared_ptr<RopeNode> left, std::shared_ptr<RopeNode> right)**
+  - Concatenates two Rope nodes.
+
+- **void Rope::collectLeaves(std::shared_ptr<RopeNode> node, std::vector<std::string> &leaves)**
+  - Collects all leaf nodes' data into a vector.
+
+- **std::vector<int> Rope::findAllOccurrences(const std::string &oldStr)**
+  - Finds all occurrences of `oldStr` in the Rope and returns their positions.
